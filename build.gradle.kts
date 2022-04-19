@@ -10,7 +10,7 @@ plugins {
     groovy
     jacoco
 
-    //id("org.sonarqube") version "3.3"
+    id("org.sonarqube") version "3.3"
 }
 
 
