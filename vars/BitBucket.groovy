@@ -34,12 +34,13 @@ static String repoName(String gitURL) {
 /**
  *  Clone a Git repository if not already exists
  *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param gitURL repository ".git" URL
  *  @return exit code
  */
-static int clone(String gitURL) {
-    if (!fileExists(repoName(gitURL))) {
-        return bat(returnStatus: true, script: "git clone ${gitURL} 1>nul 2>&1 || exit /B 1")
+static int clone(ctx, String gitURL) {
+    if (!ctx.fileExists(repoName(gitURL))) {
+        return ctx.bat(returnStatus: true, script: "git clone ${gitURL} 1>nul 2>&1 || exit /B 1")
     }
     return 0
 }
@@ -48,12 +49,13 @@ static int clone(String gitURL) {
 /**
  *  Merge a Git branch into the current one
  *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param repoName the name of the directory in workspace
  *  @param branchName the branch to merge into the current one
  *  @return exit code
  */
-static int merge(String repoName, String branchName) {
-    dir(repoName) {
-        return bat(returnStatus: true, script: "git merge ${branchName} || exit /B 1")
+static int merge(ctx, String repoName, String branchName) {
+    ctx.dir(repoName) {
+        return ctx.bat(returnStatus: true, script: "git merge ${branchName} || exit /B 1")
     }
 }
