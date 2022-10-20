@@ -29,3 +29,31 @@ static String rawURL(String gitURL) {
 static String repoName(String gitURL) {
     BitBucketImpl.repoName(gitURL)
 }
+
+
+/**
+ *  Clone a Git repository if not already exists
+ *
+ *  @param gitURL repository ".git" URL
+ *  @return exit code
+ */
+static int clone(String gitURL) {
+    if (!fileExists(repoName(gitURL))) {
+        return bat(returnStatus: true, script: "git clone ${gitURL} 1>nul 2>&1 || exit /B 1")
+    }
+    return 0
+}
+
+
+/**
+ *  Merge a Git branch into the current one
+ *
+ *  @param repoName the name of the directory in workspace
+ *  @param branchName the branch to merge into the current one
+ *  @return exit code
+ */
+static int merge(String repoName, String branchName) {
+    dir(repoName) {
+        return bat(returnStatus: true, script: "git merge ${branchName} || exit /B 1")
+    }
+}

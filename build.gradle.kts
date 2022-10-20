@@ -21,6 +21,7 @@ version = project.extra["library.version"]!! as String
 
 /** 3) Dependency source configuration */
 repositories {
+    maven { url = uri("https://repo.jenkins-ci.org/releases/") }
     mavenCentral()
     gradlePluginPortal()
 }
@@ -29,6 +30,7 @@ repositories {
 /** 4) Library dependencies */
 dependencies {
     implementation("org.codehaus.groovy:groovy-all:3.0.13")
+    implementation("org.jenkins-ci.main:jenkins-core:2.364")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
