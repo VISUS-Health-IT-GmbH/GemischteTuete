@@ -25,4 +25,13 @@ class BitBucketImplTest {
             BitBucketImpl.rawURL("http://bitbucket/scm/GitHub/JenkinsBib.git")
         )
     }
+
+
+    /** 2) Test "repoName" method */
+    @Test void test_repoName() {
+        Assert.assertEquals(
+            "JenkinsBib",
+            BitBucketImpl.repoName("http://bitbucket/scm/GitHub/JenkinsBib.git")
+        )
+    }
 }

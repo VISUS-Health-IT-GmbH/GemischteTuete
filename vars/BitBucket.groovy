@@ -15,8 +15,17 @@ import com.visus.jenkins.BitBucketImpl
 
 /**
  *  Jenkins wrapper for:
- *  @see com.visus.jenkins.BitBucketImpl
+ *  @see com.visus.jenkins.BitBucketImpl#rawURL
  */
 static String rawURL(String gitURL) {
     BitBucketImpl.rawURL(gitURL)
+}
+
+
+/**
+ *  Jenkins wrapper for:
+ *  @see com.visus.jenkins.BitBucketImpl#repoName
+ */
+static String repoName(String gitURL) {
+    BitBucketImpl.repoName(gitURL)
 }

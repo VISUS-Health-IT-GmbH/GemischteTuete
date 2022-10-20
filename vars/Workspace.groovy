@@ -16,7 +16,7 @@ import com.visus.jenkins.WorkspaceImpl
 
 /**
  *  Jenkins wrapper for:
- *  @see com.visus.jenkins.WorkspaceImpl
+ *  @see com.visus.jenkins.WorkspaceImpl#resolveWorkspaceScriptDir
  */
 static String resolveWorkspaceScriptDir(String workspace, String gitURL) {
     return WorkspaceImpl.resolveWorkspaceScriptDir(workspace, gitURL)
@@ -25,7 +25,7 @@ static String resolveWorkspaceScriptDir(String workspace, String gitURL) {
 
 /**
  *  Jenkins wrapper for:
- *  @see com.visus.jenkins.WorkspaceImpl
+ *  @see com.visus.jenkins.WorkspaceImpl#readFileInWorkspaceScriptDir
  */
 static String readFileInWorkspaceScriptDir(String workspaceScriptDir, String filePath) {
     return WorkspaceImpl.readFileInWorkspaceScriptDir(workspaceScriptDir, filePath)

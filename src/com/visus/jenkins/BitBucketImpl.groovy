@@ -38,4 +38,17 @@ class BitBucketImpl {
 
         return "${rest.substring(0, rest.lastIndexOf("/"))}$partOfURL"
     }
+
+
+    /**
+     *  Return the name of the repository from a Git URL
+     *
+     *  @param gitURL to be used
+     *  @return repository name
+     */
+    static String repoName(String gitURL) {
+        // http://bitbucket/scm/<Project>/<Repo>.git
+        // <Repo>
+        return gitURL.substring(gitURL.lastIndexOf("/")+1).split("\\.")[0]
+    }
 }

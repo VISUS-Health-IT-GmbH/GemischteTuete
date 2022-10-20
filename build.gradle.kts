@@ -10,7 +10,7 @@ plugins {
     groovy
     jacoco
 
-    id("org.sonarqube") version "3.3"
+    id("org.sonarqube") version "3.4.0.2513"
 }
 
 
@@ -28,9 +28,9 @@ repositories {
 
 /** 4) Library dependencies */
 dependencies {
-    implementation("org.codehaus.groovy:groovy-all:3.0.5")
+    implementation("org.codehaus.groovy:groovy-all:3.0.13")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
