@@ -3,7 +3,7 @@
  *  Copyright (C) 2022, VISUS Health IT GmbH
  *  This software and supporting documentation were developed by
  *    VISUS Health IT GmbH
- *    Gesundheitscampus-Sued 15-17
+ *    Gesundheitscampus-Sued 15
  *    D-44801 Bochum, Germany
  *    http://www.visus.com
  *    mailto:info@visus.com

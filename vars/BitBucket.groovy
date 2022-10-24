@@ -3,7 +3,7 @@
  *  Copyright (C) 2022, VISUS Health IT GmbH
  *  This software and supporting documentation were developed by
  *    VISUS Health IT GmbH
- *    Gesundheitscampus-Sued 15-17
+ *    Gesundheitscampus-Sued 15
  *    D-44801 Bochum, Germany
  *    http://www.visus.com
  *    mailto:info@visus.com
@@ -11,6 +11,10 @@
  *  -> see LICENCE at root of repository
  */
 import com.visus.jenkins.BitBucketImpl
+
+
+// TODO: Everywhere where there is a parameter "repoName" also "allow" Git URLs but check if it ends with ".git" and
+//       then call (BitBucket.)repoName(...) method!
 
 
 /**
@@ -173,4 +177,22 @@ static Tuple2<String, String> init(ctx, String repoName, String fallback, Boolea
     }
 
     return new Tuple2<String, String>(source, target)
+}
+
+
+/**
+ *  Get the last Git commit hash of a specific repository in workspace
+ *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param repoName the repository to check last commit hash
+ *  @return commit hash
+ */
+static String lastCommitHash(ctx, String repoName) {
+    ctx.dir(repoName) {
+        String hash = ctx.bat(
+            returnStdout: true,
+            script: """git log -n 1 --pretty=format:'%%H'"""
+        ).trim()
+        return hash.substring(hash.lastIndexOf("\n")).trim().replaceAll("'", "")
+    }
 }
