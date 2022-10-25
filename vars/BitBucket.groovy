@@ -10,6 +10,7 @@
  *
  *  -> see LICENCE at root of repository
  */
+
 import com.visus.jenkins.BitBucketImpl
 
 
@@ -130,7 +131,7 @@ static int merge(ctx, String repoName, String branchName) {
  *  @return tuple containing source / target branch, source branch might differ from multibranch pipeline branch and
  *          target can be null on branch build
  */
-static Tuple2<String, String> init(ctx, String repoName, String fallback, Boolean LFS = false) {
+static String[] init(ctx, String repoName, String fallback, Boolean LFS = false) {
     // load variables to check if either PR or normal build
     String source = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME
     String target = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
@@ -176,7 +177,7 @@ static Tuple2<String, String> init(ctx, String repoName, String fallback, Boolea
         ctx.echo("!!! Branch build: ${repoName} -> ${source} !!!")
     }
 
-    return new Tuple2<String, String>(source, target)
+    return (String[])[source, target]
 }
 
 
