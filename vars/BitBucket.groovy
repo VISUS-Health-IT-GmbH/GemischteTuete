@@ -45,7 +45,7 @@ static String repoName(String gitURL) {
  */
 static int clone(ctx, String gitURL) {
     if (!ctx.fileExists(repoName(gitURL))) {
-        return ctx.bat(returnStatus: true, script: "git clone ${gitURL} 1>nul 2>&1 || exit /B 1")
+        return ctx.bat(returnStatus: true, script: "git clone ${gitURL} 1>nul || exit /B 1")
     }
     return 0
 }
@@ -63,16 +63,15 @@ static int clone(ctx, String gitURL) {
 static int checkout(ctx, String repoName, String branchName, Boolean LFS = false) {
     ctx.dir(repoName) {
         // i) abort possible previous MERGING state
-        ctx.bat(returnStatus: true, script: "git merge --abort 1>nul 2>&1")
+        ctx.bat(returnStatus: true, script: "git merge --abort 1>nul")
 
         // ii) initial clean of the repository
         def exitCode = ctx.bat(
             returnStatus: true,
             script: """
-                :: fetch changes from server and prune everything unnecessary + clean
-                git fetch --all --prune 1>nul 2>&1 || exit /B 1
-                git clean -dfx 1>nul 2>&1 || exit /B 1
-                git gc --auto --quiet 1>nul 2>&1 || exit /B 1
+                git fetch --all --prune 1>nul || exit /B 1
+                git clean -dfx 1>nul || exit /B 1
+                git gc --auto --quiet 1>nul || exit /B 1
             """
         )
 
@@ -81,10 +80,9 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    :: checkout the specific branch, pull possible changes and update Git sub modules if any found
-                    git checkout ${branchName} 1>nul 2>&1 || exit /B 1
-                    git pull 1>nul 2>&1 || exit /B 1
-                    git submodule update --init --recursive 1>nul 2>&1 || exit /B 1
+                    git checkout ${branchName} 1>nul || exit /B 1
+                    git pull 1>nul || exit /B 1
+                    git submodule update --init --recursive 1>nul || exit /B 1
                 """
             )
         }
@@ -94,9 +92,8 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    :: Git LFS operations
-                    git lfs fetch --all --prune 1>nul 2>&1 || exit /B 1
-                    git lfs pull 1>nul 2>&1 || exit /B 1
+                    git lfs fetch --all --prune 1>nul || exit /B 1
+                    git lfs pull 1>nul || exit /B 1
                 """
             )
         }
