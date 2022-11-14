@@ -95,10 +95,25 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
 
         // iii) checkout & Git submodules
         if (exitCode == 0) {
+            exitCode = ctx.bat(returnStatus: true, script: "git checkout ${branchName} 1>nul")
+            if (exitCode > 0 && LFS) {
+                // INFO: An issue with Git LFS pointers has occurred, stash the changes (including dropping them) and
+                //       clean the repository again, starting at the last clean commit!
+                ctx.bat(
+                    returnStatus: true,
+                    script: """
+                        git stash --include-untracked 1>nul || exit /B 1
+                        git clean -dfx 1>nul || exit /B 1
+                        git reset --hard 1>nul || exit /B 1
+                        git stash clear 1>nul || exit /B 1
+                        git checkout ${branchName} 1>nul || exit /B 1
+                    """
+                )
+            }
+
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    git checkout ${branchName} 1>nul || exit /B 1
                     git pull 1>nul || exit /B 1
                     git submodule update --init --recursive 1>nul || exit /B 1
                 """
