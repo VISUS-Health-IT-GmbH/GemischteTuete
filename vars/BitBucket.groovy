@@ -23,7 +23,7 @@ import com.visus.jenkins.BitBucketImpl
  *  @see com.visus.jenkins.BitBucketImpl#rawURL
  */
 static String rawURL(String gitURL) {
-    BitBucketImpl.rawURL(gitURL)
+    return BitBucketImpl.rawURL(gitURL)
 }
 
 
@@ -32,7 +32,25 @@ static String rawURL(String gitURL) {
  *  @see com.visus.jenkins.BitBucketImpl#repoName
  */
 static String repoName(String gitURL) {
-    BitBucketImpl.repoName(gitURL)
+    return BitBucketImpl.repoName(gitURL)
+}
+
+
+/**
+ *  Jenkins wrapper for:
+ *  @see com.visus.jenkins.BitBucketImpl#projectName
+ */
+static String projectName(String gitURL) {
+    return BitBucketImpl.projectName(gitURL)
+}
+
+
+/**
+ *  Jenkins wrapper for:
+ *  @see com.visus.jenkins.BitBucketImpl#checkForOpenPullRequest
+ */
+static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
+    return BitBucketImpl.checkForOpenPullRequest(gitURL, branchName, username, password)
 }
 
 

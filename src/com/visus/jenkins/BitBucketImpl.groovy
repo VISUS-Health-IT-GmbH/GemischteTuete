@@ -12,6 +12,8 @@
  */
 package com.visus.jenkins
 
+import groovy.json.JsonSlurper
+
 
 /**
  *  Methods for messing with BitBucket
@@ -50,5 +52,52 @@ class BitBucketImpl {
         // http://bitbucket/scm/<Project>/<Repo>.git
         // <Repo>
         return gitURL.substring(gitURL.lastIndexOf("/")+1).split("\\.")[0]
+    }
+
+
+    /**
+     *  Return the name of the project from a Git URL
+     *
+     *  @param gitURL to be used
+     *  @return project name
+     */
+    static String projectName(String gitURL) {
+        return gitURL.substring(gitURL.indexOf("/scm/")+5).split("/")[0]
+    }
+
+
+    /**
+     *  Check if a branch also exists as a (not merged nor declined) pull request
+     *
+     *  @param gitURL to be used
+     *  @param branchName to check for opened pull requests
+     *  @param username the username to be used in authentication
+     *  @param password the password to be used in authentication
+     *  @return true if a open pull request exists, false otherwise
+     */
+    static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
+        String baseURL = gitURL.substring(0, gitURL.indexOf("/scm/"))
+        String repoName = repoName(gitURL)
+        String projectName = projectName(gitURL)
+
+        try {
+            // Get results from BitBucket REST API -> { "size": int, "limit": int, ..., "values": List<Object>, ... }
+            def result = new JsonSlurper().parseText(
+                new URL("${baseURL}/rest/api/latest/projects/${projectName}/repos/${repoName}/pull-requests?limit=100&state=OPEN")
+                    .getText(requestProperties: [
+                        'Authorization': 'Basic ' + "${username}:${password}".bytes.encodeBase64().toString()
+                    ])
+            )
+
+            // "values": List<Object> -> { ..., "fromRef": Object, ... } -> { "id": String, ... }
+            // -> Path to name of source branch of pull request!
+            result.values.forEach {
+                if (it.fromRef.id == "refs/heads/${branchName}") {
+                    return true
+                }
+            }
+        } catch (Exception ignored) { }
+
+        return false
     }
 }

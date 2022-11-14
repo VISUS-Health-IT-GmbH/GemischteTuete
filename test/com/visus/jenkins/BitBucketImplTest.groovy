@@ -34,4 +34,13 @@ class BitBucketImplTest {
             BitBucketImpl.repoName("http://bitbucket/scm/GitHub/JenkinsBib.git")
         )
     }
+
+
+    /** 3) Test "projectName" method */
+    @Test void test_projectName() {
+        Assert.assertEquals(
+            "GitHub",
+            BitBucketImpl.projectName("http://bitbucket/scm/GitHub/JenkinsBib.git")
+        )
+    }
 }
