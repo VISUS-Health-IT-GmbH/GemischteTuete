@@ -76,18 +76,20 @@ class BitBucketImpl {
      *  @return true if a open pull request exists, false otherwise
      */
     static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
-        String baseURL = gitURL.substring(0, gitURL.indexOf("/scm/"))
-        String repoName = repoName(gitURL)
-        String projectName = projectName(gitURL)
+        String completeURL = "${gitURL.substring(0, gitURL.indexOf("/scm/"))}/rest/api/latest/projects/" +
+                                "${projectName(gitURL)}/repos/${repoName(gitURL)}/pull-requests?limit=100&state=OPEN"
+
+        println("DEBUG 1: completeURL -> $completeURL")
 
         try {
             // Get results from BitBucket REST API -> { "size": int, "limit": int, ..., "values": List<Object>, ... }
             def result = new JsonSlurper().parseText(
-                new URL("${baseURL}/rest/api/latest/projects/${projectName}/repos/${repoName}/pull-requests?limit=100&state=OPEN")
-                    .getText(requestProperties: [
-                        'Authorization': 'Basic ' + "${username}:${password}".bytes.encodeBase64().toString()
-                    ])
+                new URL(completeURL).getText(requestProperties: [
+                    'Authorization': 'Basic ' + "${username}:${password}".bytes.encodeBase64().toString()
+                ])
             )
+
+            println("DEBUG 2: result -> $result")
 
             // "values": List<Object> -> { ..., "fromRef": Object, ... } -> { "id": String, ... }
             // -> Path to name of source branch of pull request!
@@ -96,7 +98,9 @@ class BitBucketImpl {
                     return true
                 }
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+            println("DEBUG 3: $ignored")
+        }
 
         return false
     }
