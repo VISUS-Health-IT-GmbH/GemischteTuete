@@ -50,7 +50,6 @@ static String projectName(String gitURL) {
  *  @see com.visus.jenkins.BitBucketImpl#checkForOpenPullRequest
  */
 static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
-    println("Before call")
     return BitBucketImpl.checkForOpenPullRequest(gitURL, branchName, username, password)
 }
 

@@ -78,7 +78,7 @@ class BitBucketImpl {
     static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
         String completeURL = "${gitURL.substring(0, gitURL.indexOf("/scm/"))}/rest/api/latest/projects/" +
                                 "${projectName(gitURL)}/repos/${repoName(gitURL)}/pull-requests?limit=100&state=OPEN"
-        println("DEBUG 1: completeURL -> $completeURL")
+        boolean ret = false
 
         try {
             // Get results from BitBucket REST API -> { "size": int, "limit": int, ..., "values": List<Object>, ... }
@@ -88,18 +88,14 @@ class BitBucketImpl {
                 ])
             )
 
-            println("DEBUG 2: result -> $result")
-
             // "values": List<Object> -> { ..., "fromRef": Object, ... } -> { "id": String, ... }
             // -> Path to name of source branch of pull request!
-            result.values.forEach {
-                if (it.fromRef.id == "refs/heads/${branchName}") {
-                    return true
+            result.values.each { it ->
+                if (("refs/heads/${branchName}" as String).equals(it.fromRef.id as String)) {
+                    ret = true
                 }
             }
-        } catch (Exception ignored) {
-            println("DEBUG 3: $ignored")
-        }
+        } catch (Exception ignored) { }
 
         return false
     }
