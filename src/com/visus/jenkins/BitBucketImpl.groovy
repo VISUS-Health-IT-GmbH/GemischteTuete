@@ -78,7 +78,6 @@ class BitBucketImpl {
     static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
         String completeURL = "${gitURL.substring(0, gitURL.indexOf("/scm/"))}/rest/api/latest/projects/" +
                                 "${projectName(gitURL)}/repos/${repoName(gitURL)}/pull-requests?limit=100&state=OPEN"
-
         println("DEBUG 1: completeURL -> $completeURL")
 
         try {
