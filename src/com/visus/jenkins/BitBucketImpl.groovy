@@ -97,6 +97,6 @@ class BitBucketImpl {
             }
         } catch (Exception ignored) { }
 
-        return false
+        return ret
     }
 }
