@@ -11,6 +11,7 @@
  *  -> see LICENCE at root of repository
  */
 
+import java.util.List
 import com.visus.jenkins.BitBucketImpl
 
 
@@ -166,43 +167,41 @@ static String[] init(ctx, String repoName, String fallback, Boolean LFS = false)
     String source = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME
     String target = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
 
+    // checkout if source / target branch exist (assuming fallback exists all the time, e.g. the main branch)
+    // 1) target exists and target not in branches -> use fallback
+    // 2) target exists and source not in branches -> use target
+    // 3) target does not exist and source not in branches -> use fallback
+    List<String> branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
+                                .split("\n").collect { it -> it.strip() }
+    target = target != null && !branches.contains(target) ? fallback : target
+    source = target != null && !branches.contains(source) ? target : source
+    source = target == null && !branches.contains(source) ? fallback : source
+
     // checkout source branch
     int exit = checkout(ctx, repoName, source, LFS)
-    if (exit > 0 && target != null) {
-        exit = checkout(ctx, repoName, target, LFS)
-        source = exit == 0 ? target : source
-    }
-    if (exit > 0) {
-        exit = checkout(ctx, repoName, fallback, LFS)
-        source = exit == 0 ? fallback : source
-    }
     if (exit > 0) {
         ctx.error(message: """
             Checking out source branch (${source}) failed with exit code: ${exit}!
         """.stripIndent())
     }
 
-    // checkout target branch & merge on PR
-    if (target != null) {
+    // checkout target branch (if PR / merge build and source branch does not equal target branch)
+    if (target != null && source != target) {
         exit = checkout(ctx, repoName, target, LFS)
         if (exit > 0) {
-            exit = checkout(ctx, repoName, fallback, LFS)
-            target = exit == 0 ? fallback : target
-        }
-        if (exit > 0) {
-            ctx.error(message: """
-                Checking out target branch (${target}) failed with exit code: ${exit}!
-            """.stripIndent())
+            ctx.error(message: "[ERROR] Checking out target branch (${target}) failed with exit code: ${exit}!")
         }
 
         exit = merge(ctx, repoName, source)
         if (exit > 0) {
             ctx.error(message: """
-                Merging source branch (${source}) into target branch (${target}) failed with exit code: ${exit}!
+                [ERROR] Merging source branch (${source}) into target branch (${target}) failed with exit code: ${exit}!
             """.stripIndent())
         }
 
         ctx.echo("!!! Merge build: ${repoName} -> ${source} merged into ${target} !!!")
+    } else if (target != null) {
+        ctx.echo("!!! Merge build: ${repoName} -> with source branch (${source}) equals target branch (${target}) !!!")
     } else {
         ctx.echo("!!! Branch build: ${repoName} -> ${source} !!!")
     }
