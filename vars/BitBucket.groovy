@@ -171,8 +171,11 @@ static String[] init(ctx, String repoName, String fallback, Boolean LFS = false)
     // 1) target exists and target not in branches -> use fallback
     // 2) target exists and source not in branches -> use target
     // 3) target does not exist and source not in branches -> use fallback
-    List<String> branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
-                                .split("\n").collect { it -> it.strip() }
+    List<String> branches = null
+    ctx.dir(repoName) {
+        branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
+                    .split("\n").collect { line -> line.strip() }
+    }
     target = target != null && !branches.contains(target) ? fallback : target
     source = target != null && !branches.contains(source) ? target : source
     source = target == null && !branches.contains(source) ? fallback : source
