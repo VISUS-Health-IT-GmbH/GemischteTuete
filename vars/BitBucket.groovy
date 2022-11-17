@@ -166,24 +166,20 @@ static int merge(ctx, String repoName, String branchName) {
  */
 static String[] init(ctx, String repoName, String source, String target, String fallback, Boolean LFS = false) {
     // checkout if source / target branch exist (assuming fallback exists all the time, e.g. the main branch)
-    // 1) target exists and target not in branches -> use fallback
-    // 2) target exists and source not in branches -> use target
-    // 3) target does not exist and source not in branches -> use fallback
+    // 1) TARGET: target is null -> null / target found -> target / target missing -> fallback
+    // 2) SOURCE: source found -> source / target found -> target / target missing -> fallback
     List<String> branches = null
     ctx.dir(repoName) {
         branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
                     .split("\n").collect { line -> line.strip() }
     }
-    String usedTarget = target != null && !branches.contains(target) ? fallback : target
-    String usedSource = usedTarget != null && !branches.contains(source) ? usedTarget : source
-    usedSource = usedTarget == null && !branches.contains(usedSource) ? fallback : usedSource
+    String usedTarget = target == null ? target : (branches.contains(target) ? target : fallback)
+    String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
 
     // checkout source branch
     int exit = checkout(ctx, repoName, usedSource, LFS)
     if (exit > 0) {
-        ctx.error(message: """
-            Checking out source branch (${usedSource}) failed with exit code: ${exit}!
-        """.stripIndent())
+        ctx.error(message: """Checking out source branch (${usedSource}) failed with exit code: ${exit}!""")
     }
 
     // checkout target branch (if PR / merge build and source branch does not equal target branch)
