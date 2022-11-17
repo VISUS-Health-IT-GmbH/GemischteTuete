@@ -50,7 +50,7 @@ static String projectName(String gitURL) {
  *  Jenkins wrapper for:
  *  @see com.visus.jenkins.BitBucketImpl#checkForOpenPullRequest
  */
-static boolean checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
+static int checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
     return BitBucketImpl.checkForOpenPullRequest(gitURL, branchName, username, password)
 }
 
