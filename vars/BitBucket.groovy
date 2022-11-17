@@ -157,16 +157,14 @@ static int merge(ctx, String repoName, String branchName) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param repoName the name of the directory in workspace
+ *  @param source the base source branch
+ *  @param target the base target branch (can be null on branch build)
  *  @param fallback branch name on which to fallback (e.g. "develop")
  *  @param LFS whether the repository is a Git LFS repository requires invoking additional commands
  *  @return tuple containing source / target branch, source branch might differ from multibranch pipeline branch and
  *          target can be null on branch build
  */
-static String[] init(ctx, String repoName, String fallback, Boolean LFS = false) {
-    // load variables to check if either PR or normal build
-    String source = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME
-    String target = ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
-
+static String[] init(ctx, String repoName, String source, String target, String fallback, Boolean LFS = false) {
     // checkout if source / target branch exist (assuming fallback exists all the time, e.g. the main branch)
     // 1) target exists and target not in branches -> use fallback
     // 2) target exists and source not in branches -> use target
@@ -176,40 +174,40 @@ static String[] init(ctx, String repoName, String fallback, Boolean LFS = false)
         branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
                     .split("\n").collect { line -> line.strip() }
     }
-    target = target != null && !branches.contains(target) ? fallback : target
-    source = target != null && !branches.contains(source) ? target : source
-    source = target == null && !branches.contains(source) ? fallback : source
+    String usedTarget = target != null && !branches.contains(target) ? fallback : target
+    String usedSource = usedTarget != null && !branches.contains(source) ? usedTarget : source
+    usedSource = usedTarget == null && !branches.contains(usedSource) ? fallback : usedSource
 
     // checkout source branch
-    int exit = checkout(ctx, repoName, source, LFS)
+    int exit = checkout(ctx, repoName, usedSource, LFS)
     if (exit > 0) {
         ctx.error(message: """
-            Checking out source branch (${source}) failed with exit code: ${exit}!
+            Checking out source branch (${usedSource}) failed with exit code: ${exit}!
         """.stripIndent())
     }
 
     // checkout target branch (if PR / merge build and source branch does not equal target branch)
-    if (target != null && source != target) {
-        exit = checkout(ctx, repoName, target, LFS)
+    if (usedTarget != null && usedSource != usedTarget) {
+        exit = checkout(ctx, repoName, usedTarget, LFS)
         if (exit > 0) {
-            ctx.error(message: "[ERROR] Checking out target branch (${target}) failed with exit code: ${exit}!")
+            ctx.error(message: "[ERROR] Checking out target branch (${usedTarget}) failed with exit code: ${exit}!")
         }
 
-        exit = merge(ctx, repoName, source)
+        exit = merge(ctx, repoName, usedSource)
         if (exit > 0) {
             ctx.error(message: """
-                [ERROR] Merging source branch (${source}) into target branch (${target}) failed with exit code: ${exit}!
+                [ERROR] Merging source branch (${usedSource}) -> branch (${usedTarget}) failed with exit code: ${exit}!
             """.stripIndent())
         }
 
-        ctx.echo("!!! Merge build: ${repoName} -> ${source} merged into ${target} !!!")
-    } else if (target != null) {
-        ctx.echo("!!! Merge build: ${repoName} -> with source branch (${source}) equals target branch (${target}) !!!")
+        ctx.echo("!!! Merge build: ${repoName} -> ${usedSource} merged into ${usedTarget} !!!")
+    } else if (usedTarget != null) {
+        ctx.echo("!!! Merge build: ${repoName} -> source branch (${usedSource}) == target branch (${usedTarget}) !!!")
     } else {
-        ctx.echo("!!! Branch build: ${repoName} -> ${source} !!!")
+        ctx.echo("!!! Branch build: ${repoName} -> ${usedSource} !!!")
     }
 
-    return (String[])[source, target]
+    return (String[])[usedSource, usedTarget]
 }
 
 
@@ -228,4 +226,18 @@ static String lastCommitHash(ctx, String repoName) {
         ).trim()
         return hash.substring(hash.lastIndexOf("\n")).trim().replaceAll("'", "")
     }
+}
+
+
+/**
+ *  Returns the initial source (and possible) target branch which are used in the build
+ *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @return tuple containing source / target branch (might be null on branch build)
+ */
+static String[] getInitialSourceTargetBranches(ctx) {
+    return (String[])[
+        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME,
+        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
+    ]
 }
