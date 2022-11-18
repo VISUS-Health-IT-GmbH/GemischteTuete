@@ -175,11 +175,9 @@ static String[] init(ctx, String repoName, String source, String target, String 
                     .findAll { line -> line.contains("refs/heads/") }
                     .collect { line -> line.replace("refs/heads/", "").strip() }
     }
-    ctx.echo("""DEBUG 1: ${branches}""")
 
     String usedTarget = target == null ? target : (branches.contains(target) ? target : fallback)
     String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
-    ctx.echo("""DEBUG 2: ${usedSource} -> ${usedTarget}""")
 
     // checkout source branch
     int exit = checkout(ctx, repoName, usedSource, LFS)
