@@ -173,8 +173,8 @@ static String[] init(ctx, String repoName, String source, String target, String 
         branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
                     .split("\n").collect { line -> line.strip() }
     }
-    String usedTarget = target == null ? target : (branches.contains(target) ? target : fallback)
-    String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
+    String usedTarget = target == null ? target : (branches.contains("origin/${target}") ? target : fallback)
+    String usedSource = branches.contains("origin/${source}") ? source : (target != null ? target : fallback)
 
     // checkout source branch
     int exit = checkout(ctx, repoName, usedSource, LFS)
