@@ -170,11 +170,16 @@ static String[] init(ctx, String repoName, String source, String target, String 
     // 2) SOURCE: source found -> source / target found -> target / target missing -> fallback
     List<String> branches = null
     ctx.dir(repoName) {
-        branches = (ctx.bat(returnStdout: true, script: """git branch -r""") as String)
-                    .split("\n").collect { line -> line.strip() }
+        branches = (ctx.bat(returnStdout: true, script: "git ls-remote --heads") as String)
+                    .split()
+                    .findAll { line -> line.contains("refs/heads/") }
+                    .collect { line -> line.replace("refs/heads/", "").strip() }
     }
-    String usedTarget = target == null ? target : (branches.contains("origin/${target}") ? target : fallback)
-    String usedSource = branches.contains("origin/${source}") ? source : (target != null ? target : fallback)
+    ctx.echo("""DEBUG 1: ${branches}""")
+
+    String usedTarget = target == null ? target : (branches.contains(target) ? target : fallback)
+    String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
+    ctx.echo("""DEBUG 2: ${usedSource} -> ${usedTarget}""")
 
     // checkout source branch
     int exit = checkout(ctx, repoName, usedSource, LFS)
