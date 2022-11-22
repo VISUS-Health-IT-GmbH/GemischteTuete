@@ -1,4 +1,4 @@
-/*  Jenkins.groovy
+/*  JenkinsIntegration.groovy
  *
  *  Copyright (C) 2022, VISUS Health IT GmbH
  *  This software and supporting documentation were developed by
@@ -31,7 +31,7 @@ static String[] getInitialSourceTargetBranches(ctx) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param number pull request number
- *  @return true if pull request available in Jenkins, false otherwise
+ *  @return true if pull request available in JenkinsIntegration, false otherwise
  */
 static boolean checkPRAvailable(ctx, int number) {
     // 1) Feature branch build:
