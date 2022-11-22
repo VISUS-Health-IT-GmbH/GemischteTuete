@@ -226,17 +226,3 @@ static String lastCommitHash(ctx, String repoName) {
         return hash.substring(hash.lastIndexOf("\n")).trim().replaceAll("'", "")
     }
 }
-
-
-/**
- *  Returns the initial source (and possible) target branch which are used in the build
- *
- *  @param ctx Jenkinsfile context to invoke DSL commands
- *  @return tuple containing source / target branch (might be null on branch build)
- */
-static String[] getInitialSourceTargetBranches(ctx) {
-    return (String[])[
-        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME,
-        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
-    ]
-}
