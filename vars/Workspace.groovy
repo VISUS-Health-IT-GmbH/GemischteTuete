@@ -149,3 +149,22 @@ static void cleanWorkspace(ctx, String[] repositories) {
         cleanRepository(ctx, repo)
     }
 }
+
+
+/**
+ *  Updates the repository provided by name laying outside the workspace
+ *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param dir absolute / relative directory
+ *  @return exit code
+ */
+static int updateRepositoryOutsideWorkspace(ctx, String dir) {
+    return ctx.bat(
+        returnStatus: true,
+        script: """
+            cd /D ${dir} 1>nul || exit /B 1
+            git fetch --all --prune 1>nul || exit /B 1
+            git pull 1>nul || exit /B 1
+        """
+    )
+}
