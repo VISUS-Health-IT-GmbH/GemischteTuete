@@ -20,8 +20,8 @@
  */
 static String[] getInitialSourceTargetBranches(ctx) {
     return (String[])[
-            ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME,
-            ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
+        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_BRANCH : ctx.env.BRANCH_NAME,
+        ctx.env.CHANGE_ID != null ? ctx.env.CHANGE_TARGET : null
     ]
 }
 
@@ -46,9 +46,14 @@ static boolean checkPRAvailable(ctx, int number) {
         }
 
         // check if PR job URL exists
-        int code = new URL("${build.substring(0, build.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}")
-                    .openConnection()
-                    .with { requestMethod = "HEAD"; connect(); responseCode }
+        HttpURLConnection connection = (HttpURLConnection)(
+            new URL("${build.substring(0, build.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}")
+                .openConnection()
+        )
+        connection.setRequestMethod("HEAD")
+        connection.connect()
+        
+        int code = connection.getResponseCode()
         if (code == 200) {
             return true
         } else if (code == 403) {
