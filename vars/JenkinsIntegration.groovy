@@ -12,6 +12,13 @@
  */
 
 
+import groovy.json.JsonSlurper
+
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+
+
 /**
  *  Returns the initial source (and possible) target branch which are used in the build
  *
@@ -31,35 +38,48 @@ static String[] getInitialSourceTargetBranches(ctx) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param number pull request number
+ *  @param username used in authentication
+ *  @param password used in authentication
  *  @return true if pull request available in JenkinsIntegration, false otherwise
  */
-static boolean checkPRAvailable(ctx, int number) {
+static boolean checkPRAvailable(ctx, int number, String username, String password) {
     // 1) Feature branch build:
     //    http://jenkins/job/<Pipeline name>/job/<Branch name>/<Build number>/
     // 2) Pull request / merge build:
     //    http://jenkins/job/<Pipeline name>/view/change-requests/job/PR-<Pull request number>/<Build number>/
-    String build = ctx.env.BUILD_URL as String
-    if (build != null) {
-        // invoked from pull request
-        if (build.contains("/view/change-requests/job/PR-${number}")) {
-            return true
-        }
-
-        // check if PR job URL exists
-        HttpURLConnection connection = (HttpURLConnection)(
-            new URL("${build.substring(0, build.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}")
-                .openConnection()
-        )
-        connection.setRequestMethod("HEAD")
-        connection.connect()
-        
-        int code = connection.getResponseCode()
-        if (code == 200) {
-            return true
-        } else if (code == 403) {
-            ctx.echo("!!! [checkPRAvailable - WARNING] Could not check due to authorization issue (${code}) !!!")
-        }
+    if ((ctx.env.BUILD_URL as String).contains("/view/change-requests/job/PR-${number}")) {
+        return false
     }
 
-    return false
+    // Get crumb issued by Jenkins
+    String authorization = "Basic ${Base64.encoder.encodeToString("${username}:${password}".getBytes())}"
+    String url = "${ctx.env.JENKINS_URL as String}crumbIssuer/api/json"
+    HttpRequest request = HttpRequest.newBuilder()
+                            .GET()
+                            .uri(new URI(url))
+                            .header("Authorization", authorization)
+                            .build()
+
+    HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+    if (response.statusCode() != 200) {
+        ctx.echo("!!! [checkPRAvailable] Could not get crumb from '${url}', exit code '${response.statusCode()}' !!!")
+        return false
+    }
+
+    // Check if pull request page exists
+    Object content = new JsonSlurper().parseText(response.body())
+    url = ctx.env.BUILD_URL as String
+    request = HttpRequest.newBuilder()
+                .GET()
+                .uri(new URI("${url.substring(0, url.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}"))
+                .header("Authorization", authorization)
+                .header(content.crumbRequestField as String, content.crumb as String)
+                .build()
+
+    response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+    if (response.statusCode() != 200) {
+        ctx.echo("!!! [checkPRAvailable] Could not get page from '${url}', exit code '${response.statusCode()}' !!!")
+        return false
+    }
+    return true
 }
