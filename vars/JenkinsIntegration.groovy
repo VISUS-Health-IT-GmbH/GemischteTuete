@@ -78,7 +78,7 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
                 .build()
 
     response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
-    if (response.statusCode() != 200) {
+    if (response.statusCode() >= 400) {
         ctx.echo("!!! [checkPRAvailable] Could not get page from '${url}', exit code '${response.statusCode()}' !!!")
         return false
     }
