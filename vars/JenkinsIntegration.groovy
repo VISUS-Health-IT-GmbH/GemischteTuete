@@ -96,6 +96,6 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
  */
 static void archiveLocalArtifact(ctx, String path) {
     ctx.archiveArtifacts(
-        artifacts: path.substring(path.lastIndexOf(File.separator)), fingerprint: true, onlyIfSuccessful: false
+        artifacts: path.substring(path.lastIndexOf(File.separator)+1), fingerprint: true, onlyIfSuccessful: false
     )
 }
