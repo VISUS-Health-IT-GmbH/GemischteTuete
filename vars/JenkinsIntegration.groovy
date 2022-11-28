@@ -86,3 +86,16 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
     }
     return true
 }
+
+
+/**
+ *  Archives an artifact (or multiple) where the path is either relative or absolute in the workspace directly
+ *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param path the (absolute) file path
+ */
+static void archiveLocalArtifact(ctx, String path) {
+    ctx.archiveArtifacts(
+        artifacts: path.substring(path.lastIndexOf(File.separator)), fingerprint: true, onlyIfSuccessful: false
+    )
+}
