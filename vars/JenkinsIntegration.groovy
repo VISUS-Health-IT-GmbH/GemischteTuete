@@ -69,9 +69,10 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
     // Check if pull request page exists
     Object content = new JsonSlurper().parseText(response.body())
     url = ctx.env.BUILD_URL as String
+    url = "${url.substring(0, url.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}"
     request = HttpRequest.newBuilder()
                 .GET()
-                .uri(new URI("${url.substring(0, url.lastIndexOf("/job"))}/view/change-requests/job/PR-${number}"))
+                .uri(new URI(url))
                 .header("Authorization", authorization)
                 .header(content.crumbRequestField as String, content.crumb as String)
                 .build()
