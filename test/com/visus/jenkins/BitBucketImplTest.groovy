@@ -47,7 +47,7 @@ class BitBucketImplTest {
 
     /** 4) Test "checkForOpenPullRequest" method */
     @Test void test_checkForOpenPullRequest() {
-        Assert.assertFalse(
+        Assert.assertNull(
             BitBucketImpl.checkForOpenPullRequest("http://bitbucket/scm/GitHub/JenkinsBib.git", "develop", "a", "b")
         )
     }

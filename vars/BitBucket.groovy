@@ -60,11 +60,19 @@ static int checkForOpenPullRequest(String gitURL, String branchName, String user
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param gitURL repository ".git" URL
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int clone(ctx, String gitURL) {
+static int clone(ctx, String gitURL, String logFile = "C:\\BitBucket.clone.log") {
     if (!ctx.fileExists(repoName(gitURL))) {
-        return ctx.bat(returnStatus: true, script: "git clone ${gitURL} 1>nul || exit /B 1")
+        return ctx.bat(
+            returnStatus: true,
+            script: """
+                echo "git clone ${gitURL}" >> ${logFile} 2>&1
+                git clone ${gitURL} >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            """
+        )
     }
     return 0
 }
@@ -77,37 +85,69 @@ static int clone(ctx, String gitURL) {
  *  @param repoName the name of the directory in workspace
  *  @param branchName the branch to be checked out
  *  @param LFS whether the repository is a Git LFS repository requires invoking additional commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int checkout(ctx, String repoName, String branchName, Boolean LFS = false) {
+static int checkout(ctx, String repoName, String branchName, Boolean LFS,
+                    String logFile = "C:\\BitBucket.checkout.log") {
     ctx.dir(repoName) {
         // i) abort possible previous MERGING state
-        ctx.bat(returnStatus: true, script: "git merge --abort 1>nul")
+        ctx.bat(
+            returnStatus: true,
+            script: """
+                echo "git merge --abort" >> ${logFile} 2>&1
+                git merge --abort >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            """
+        )
 
         // ii) initial clean of the repository
         def exitCode = ctx.bat(
             returnStatus: true,
             script: """
-                git fetch --all --prune 1>nul || exit /B 1
-                git clean -dfx 1>nul || exit /B 1
-                git gc --auto --quiet 1>nul || exit /B 1
+                echo "git fetch --all --prune" >> ${logFile} 2>&1
+                git fetch --all --prune >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                echo "git clean -dfx" >> ${logFile} 2>&1
+                git clean -dfx >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                echo "git gc --auto --quiet" >> ${logFile} 2>&1
+                git gc --auto --quiet >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
             """
         )
 
         // iii) checkout & Git submodules
         if (exitCode == 0) {
-            exitCode = ctx.bat(returnStatus: true, script: "git checkout ${branchName} 1>nul")
+            exitCode = ctx.bat(
+                returnStatus: true,
+                script: """
+                    echo "git checkout ${branchName}" >> ${logFile} 2>&1
+                    git checkout ${branchName} >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                """
+            )
             if (exitCode > 0 && LFS) {
                 // INFO: An issue with Git LFS pointers has occurred, stash the changes (including dropping them) and
                 //       clean the repository again, starting at the last clean commit!
                 ctx.bat(
                     returnStatus: true,
                     script: """
-                        git stash --include-untracked 1>nul || exit /B 1
-                        git clean -dfx 1>nul || exit /B 1
-                        git reset --hard 1>nul || exit /B 1
-                        git stash clear 1>nul || exit /B 1
-                        git checkout ${branchName} 1>nul || exit /B 1
+                        echo "git stash --include-untracked" >> ${logFile} 2>&1
+                        git stash --include-untracked >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git clean -dfx" >> ${logFile} 2>&1
+                        git clean -dfx >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git reset --hard" >> ${logFile} 2>&1
+                        git reset --hard >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git stash clear" >> ${logFile} 2>&1
+                        git stash clear >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git checkout ${branchName}" >> ${logFile} 2>&1
+                        git checkout ${branchName} >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                     """
                 )
             }
@@ -115,8 +155,12 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    git pull 1>nul || exit /B 1
-                    git submodule update --init --recursive 1>nul || exit /B 1
+                    echo "git pull" >> ${logFile} 2>&1
+                    git pull >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                    echo "git submodule update --init --recursive" >> ${logFile} 2>&1
+                    git submodule update --init --recursive >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                 """
             )
         }
@@ -126,8 +170,12 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    git lfs fetch --all --prune 1>nul || exit /B 1
-                    git lfs pull 1>nul || exit /B 1
+                    echo "git lfs fetch --all --prune" >> ${logFile} 2>&1
+                    git lfs fetch --all --prune >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                    echo "git lfs pull" >> ${logFile} 2>&1
+                    git lfs pull >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                 """
             )
         }
@@ -143,11 +191,19 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS = false
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param repoName the name of the directory in workspace
  *  @param branchName the branch to merge into the current one
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int merge(ctx, String repoName, String branchName) {
+static int merge(ctx, String repoName, String branchName, String logFile = "C:\\BitBucket.merge.log") {
     ctx.dir(repoName) {
-        return ctx.bat(returnStatus: true, script: "git merge ${branchName} || exit /B 1")
+        return ctx.bat(
+            returnStatus: true,
+            script: """
+                echo "git merge ${branchName}" >> ${logFile} 2>&1
+                git merge ${branchName} >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            """
+        )
     }
 }
 
@@ -161,10 +217,12 @@ static int merge(ctx, String repoName, String branchName) {
  *  @param target the base target branch (can be null on branch build)
  *  @param fallback branch name on which to fallback (e.g. "develop")
  *  @param LFS whether the repository is a Git LFS repository requires invoking additional commands
+ *  @param logFile the log file to use
  *  @return tuple containing source / target branch, source branch might differ from multibranch pipeline branch and
  *          target can be null on branch build
  */
-static String[] init(ctx, String repoName, String source, String target, String fallback, Boolean LFS = false) {
+static String[] init(ctx, String repoName, String source, String target, String fallback, Boolean LFS,
+                     String logFile = "C:\\BitBucket.init.log") {
     // checkout if source / target branch exist (assuming fallback exists all the time, e.g. the main branch)
     // 1) TARGET: target is null -> null / target found -> target / target missing -> fallback
     // 2) SOURCE: source found -> source / target found -> target / target missing -> fallback
@@ -180,30 +238,36 @@ static String[] init(ctx, String repoName, String source, String target, String 
     String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
 
     // checkout source branch
-    int exit = checkout(ctx, repoName, usedSource, LFS)
+    int exit = checkout(ctx, repoName, usedSource, LFS, logFile)
     if (exit > 0) {
-        ctx.error(message: """Checking out source branch (${usedSource}) failed with exit code: ${exit}!""")
+        ctx.error(
+            message: """[BitBucket.init] Checking out source branch (${usedSource}) failed with exit code: ${exit}!"""
+        )
     }
 
     // checkout target branch (if PR / merge build and source branch does not equal target branch)
     if (usedTarget != null && usedSource != usedTarget) {
-        exit = checkout(ctx, repoName, usedTarget, LFS)
+        exit = checkout(ctx, repoName, usedTarget, LFS, logFile)
         if (exit > 0) {
-            ctx.error(message: "[ERROR] Checking out target branch (${usedTarget}) failed with exit code: ${exit}!")
+            ctx.error(
+                message: "[BitBucket.init] Checking out target branch (${usedTarget}) failed with exit code: ${exit}!"
+            )
         }
 
-        exit = merge(ctx, repoName, usedSource)
+        exit = merge(ctx, repoName, usedSource, logFile)
         if (exit > 0) {
             ctx.error(message: """
-                [ERROR] Merging source branch (${usedSource}) -> branch (${usedTarget}) failed with exit code: ${exit}!
+                [BitBucket.init] Merging '${usedSource}' into '${usedTarget}' failed with exit code: ${exit}!
             """.stripIndent())
         }
 
-        ctx.echo("!!! Merge build: ${repoName} -> ${usedSource} merged into ${usedTarget} !!!")
+        ctx.echo("!!! [BitBucket.init] Merge build: ${repoName} -> ${usedSource} merged into ${usedTarget} !!!")
     } else if (usedTarget != null) {
-        ctx.echo("!!! Merge build: ${repoName} -> source branch (${usedSource}) == target branch (${usedTarget}) !!!")
+        ctx.echo(
+            "!!! [BitBucket.init] Merge build: ${repoName} -> source (${usedSource}) == target (${usedTarget}) !!!"
+        )
     } else {
-        ctx.echo("!!! Branch build: ${repoName} -> ${usedSource} !!!")
+        ctx.echo("!!! [BitBucket.init] Branch build: ${repoName} -> ${usedSource} !!!")
     }
 
     return (String[])[usedSource, usedTarget]

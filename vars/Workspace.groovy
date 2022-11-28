@@ -36,12 +36,17 @@ static String readFileInWorkspaceScriptDir(String workspaceScriptDir, String fil
  *  Kills all MySQL daemons
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int killAllMySQLDaemons(ctx) {
+static int killAllMySQLDaemons(ctx, String logFile = "C:\\Workspace.killAllMySQLDaemons.log") {
     return ctx.bat(
         returnStatus: true,
-        script: """WMIC PROCESS WHERE ^(commandline like '%%mysqld%%'^) CALL Terminate 1>nul"""
+        script: """
+            echo "WMIC PROCESS WHERE ^(commandline like '%%mysqld%%'^) CALL Terminate" >> ${logFile} 2>&1
+            WMIC PROCESS WHERE ^(commandline like '%%mysqld%%'^) CALL Terminate >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
     )
 }
 
@@ -50,12 +55,17 @@ static int killAllMySQLDaemons(ctx) {
  *  Kills all RMI daemons
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int killAllRMIDaemons(ctx) {
+static int killAllRMIDaemons(ctx, String logFile = "C:\\Workspace.killAllRMIDaemons.log") {
     return ctx.bat(
         returnStatus: true,
-        script: """WMIC PROCESS WHERE ^(name like '%%rmid%%'^) CALL Terminate 1>nul"""
+        script: """
+            echo "WMIC PROCESS WHERE ^(name like '%%rmid%%'^) CALL Terminate" >> ${logFile} 2>&1
+            WMIC PROCESS WHERE ^(name like '%%rmid%%'^) CALL Terminate >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
     )
 }
 
@@ -64,12 +74,17 @@ static int killAllRMIDaemons(ctx) {
  *  Kills all Gradle daemons (possible zombie processes)
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int killAllGradleDaemons(ctx) {
+static int killAllGradleDaemons(ctx, String logFile = "C:\\Workspace.killAllGradleDaemons.log") {
     return ctx.bat(
         returnStatus: true,
-        script: """WMIC PROCESS WHERE ^(commandline like '%%org.gradle%%'^) CALL Terminate 1>nul"""
+        script: """
+            echo "WMIC PROCESS WHERE ^(commandline like '%%org.gradle%%'^) CALL Terminate" >> ${logFile} 2>&1
+            WMIC PROCESS WHERE ^(commandline like '%%org.gradle%%'^) CALL Terminate >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
     )
 }
 
@@ -82,12 +97,30 @@ static int killAllGradleDaemons(ctx) {
  *  ... yaaay ...
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  */
-static void killAllDaemons(ctx) {
-    killAllMySQLDaemons(ctx)
-    killAllGradleDaemons(ctx)
-    killAllRMIDaemons(ctx)
-    killAllGradleDaemons(ctx)
+static void killAllDaemons(ctx, String logFile = "C:\\Workspace.killAllDaemons.log") {
+    killAllMySQLDaemons(ctx, logFile)
+    killAllGradleDaemons(ctx, logFile)
+    killAllRMIDaemons(ctx, logFile)
+    killAllGradleDaemons(ctx, logFile)
+}
+
+
+/**
+ *  Clean all log files in workspace created by any build
+ *
+ *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @return exit code
+ */
+static int cleanLogFiles(ctx) {
+    return ctx.bat(
+        returnStatus: true,
+        script: """
+            del /s /f /q *.log
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
+    )
 }
 
 
@@ -95,12 +128,17 @@ static void killAllDaemons(ctx) {
  *  Clean the "build" directory used to share build results between multiple repositories
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int cleanBuild(ctx) {
+static int cleanBuild(ctx, String logFile = "C:\\Workspace.cleanBuild.log") {
     return ctx.bat(
         returnStatus: true,
-        script: """del /s /f /q build 1>nul"""
+        script: """
+            echo "del /s /f /q build" >> ${logFile} 2>&1
+            del /s /f /q build >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
     )
 }
 
@@ -109,12 +147,17 @@ static int cleanBuild(ctx) {
  *  Clean the "generateJUnitFiles" directory used to generate jUnit resources shared between multiple repositories
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int cleanGenerateJUnitFiles(ctx) {
+static int cleanGenerateJUnitFiles(ctx, String logFile = "C:\\Workspace.cleanGenerateJUnitFiles.log") {
     return ctx.bat(
         returnStatus: true,
-        script: """del /s /f /q generateJUnitFiles 1>nul"""
+        script: """
+            echo "del /s /f /q generateJUnitFiles" >> ${logFile} 2>&1
+            del /s /f /q generateJUnitFiles >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+        """
     )
 }
 
@@ -124,13 +167,18 @@ static int cleanGenerateJUnitFiles(ctx) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param repoName name of the repository
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int cleanRepository(ctx, String repoName) {
+static int cleanRepository(ctx, String repoName, String logFile = "C:\\Workspace.cleanRepository.log") {
     ctx.dir(repoName) {
         return ctx.bat(
             returnStatus: true,
-            script: "git clean -dfx 1>nul"
+            script: """
+                echo "git clean -dfx" >> ${logFile} 2>&1
+                git clean -dfx >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            """
         )
     }
 }
@@ -141,12 +189,13 @@ static int cleanRepository(ctx, String repoName) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param repositories list of all repositories to clean using "cleanRepository(...)"
+ *  @param logFile the log file to use
  */
-static void cleanWorkspace(ctx, String[] repositories) {
-    cleanBuild(ctx)
-    cleanGenerateJUnitFiles(ctx)
+static void cleanWorkspace(ctx, String[] repositories, String logFile = "C:\\Workspace.cleanWorkspace.log") {
+    cleanBuild(ctx, logFile)
+    cleanGenerateJUnitFiles(ctx, logFile)
     for (String repo in repositories) {
-        cleanRepository(ctx, repo)
+        cleanRepository(ctx, repo, logFile)
     }
 }
 
@@ -156,15 +205,23 @@ static void cleanWorkspace(ctx, String[] repositories) {
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
  *  @param dir absolute / relative directory
+ *  @param logFile the log file to use
  *  @return exit code
  */
-static int updateRepositoryOutsideWorkspace(ctx, String dir) {
+static int updateRepositoryOutsideWorkspace(ctx, String dir,
+                                            String logFile = "C:\\Workspace.updateRepositoryOutsideWorkspace.log") {
     return ctx.bat(
         returnStatus: true,
         script: """
-            cd /D ${dir} 1>nul || exit /B 1
-            git fetch --all --prune 1>nul || exit /B 1
-            git pull 1>nul || exit /B 1
+            echo "cd /D ${dir}" >> ${logFile} 2>&1
+            cd /D ${dir} >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            echo "git fetch --all --prune" >> ${logFile} 2>&1
+            git fetch --all --prune >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+            echo "git pull" >> ${logFile} 2>&1
+            git pull >> ${logFile} 2>&1
+            if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
         """
     )
 }

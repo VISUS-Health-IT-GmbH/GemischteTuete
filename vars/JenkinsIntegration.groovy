@@ -61,8 +61,9 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
                             .build()
 
     HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
-    if (response.statusCode() != 200) {
-        ctx.echo("!!! [checkPRAvailable] Could not get crumb from '${url}', exit code '${response.statusCode()}' !!!")
+    int code = response.statusCode()
+    if (code != 200) {
+        ctx.echo("!!! [JenkinsIntegration.checkPRAvailable] Could not get crumb from '${url}', exit code '${code}' !!!")
         return false
     }
 
@@ -78,8 +79,9 @@ static boolean checkPRAvailable(ctx, int number, String username, String passwor
                 .build()
 
     response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
-    if (response.statusCode() >= 400) {
-        ctx.echo("!!! [checkPRAvailable] Could not get page from '${url}', exit code '${response.statusCode()}' !!!")
+    code = response.statusCode()
+    if (code >= 400) {
+        ctx.echo("!!! [JenkinsIntegration.checkPRAvailable] Could not get page from '${url}', exit code '${code}' !!!")
         return false
     }
     return true
