@@ -150,6 +150,20 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS,
                         if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                     """
                 )
+            } else if (exitCode > 0) {
+                // INFO: An issue with Git where the same branch differs on remote and locally even though no commits
+                //       where done locally -> reset hard to the remote version of the branch requested!
+                ctx.bat(
+                    returnStatus: true,
+                    script: """
+                        echo "git reset --hard origin/${branchName}" >> ${logFile} 2>&1
+                        git reset --hard origin/${branchName} >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git checkout ${branchName}" >> ${logFile} 2>&1
+                        git checkout ${branchName} >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                    """
+                )
             }
 
             exitCode = ctx.bat(
