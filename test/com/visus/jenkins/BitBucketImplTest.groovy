@@ -47,8 +47,16 @@ class BitBucketImplTest {
 
     /** 4) Test "checkForOpenPullRequest" method */
     @Test void test_checkForOpenPullRequest() {
-        Assert.assertNull(
-            BitBucketImpl.checkForOpenPullRequest("http://bitbucket/scm/GitHub/JenkinsBib.git", "develop", "a", "b")
+        Assert.assertEquals(
+            -1, BitBucketImpl.checkForOpenPullRequest("http://bitbucket/scm/GitHub/JenkinsBib.git","develop", "a", "b")
         )
+    }
+
+
+    /** 5) Test "developOrReleaseBranch" method */
+    @Test void test_developOrReleaseBranch() {
+        Assert.assertTrue(BitBucketImpl.developOrReleaseBranch("develop"))
+        Assert.assertTrue(BitBucketImpl.developOrReleaseBranch("release/JenkinsBib/1.0"))
+        Assert.assertFalse(BitBucketImpl.developOrReleaseBranch("niceBranchName"))
     }
 }

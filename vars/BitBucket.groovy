@@ -48,6 +48,15 @@ static String projectName(String gitURL) {
 
 /**
  *  Jenkins wrapper for:
+ *  @see com.visus.jenkins.BitBucketImpl#developOrReleaseBranch
+ */
+static boolean developOrReleaseBranch(String branchName) {
+    return BitBucketImpl.developOrReleaseBranch(branchName)
+}
+
+
+/**
+ *  Jenkins wrapper for:
  *  @see com.visus.jenkins.BitBucketImpl#checkForOpenPullRequest
  */
 static int checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {

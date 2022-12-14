@@ -67,6 +67,17 @@ class BitBucketImpl {
 
 
     /**
+     *  Check if a branch provided fits the scheme "develop" or "release/*"
+     *
+     *  @param branchName
+     *  @return
+     */
+    static boolean developOrReleaseBranch(String branchName) {
+        return branchName == "develop" || branchName.startsWith("release/")
+    }
+
+
+    /**
      *  Check if a branch also exists as a (not merged nor declined) pull request
      *
      *  @param gitURL to be used
@@ -78,7 +89,7 @@ class BitBucketImpl {
     static int checkForOpenPullRequest(String gitURL, String branchName, String username, String password) {
         String completeURL = "${gitURL.substring(0, gitURL.indexOf("/scm/"))}/rest/api/latest/projects/" +
                                 "${projectName(gitURL)}/repos/${repoName(gitURL)}/pull-requests?limit=100&state=OPEN"
-        int ret = null
+        int ret = -1
 
         try {
             // Get results from BitBucket REST API -> { "size": int, "limit": int, ..., "values": List<Object>, ... }
