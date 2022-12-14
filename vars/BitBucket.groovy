@@ -15,10 +15,6 @@ import java.util.List
 import com.visus.jenkins.BitBucketImpl
 
 
-// TODO: Everywhere where there is a parameter "repoName" also "allow" Git URLs but check if it ends with ".git" and
-//       then call (BitBucket.)repoName(...) method!
-
-
 /**
  *  Jenkins wrapper for:
  *  @see com.visus.jenkins.BitBucketImpl#rawURL
@@ -91,15 +87,15 @@ static int clone(ctx, String gitURL, String logFile = "C:\\BitBucket.clone.log")
  *  Checks a Git branch out in the repository provided
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
- *  @param repoName the name of the directory in workspace
+ *  @param repository the name of the directory in workspace
  *  @param branchName the branch to be checked out
  *  @param LFS whether the repository is a Git LFS repository requires invoking additional commands
  *  @param logFile the log file to use
  *  @return exit code
  */
-static int checkout(ctx, String repoName, String branchName, Boolean LFS,
+static int checkout(ctx, String repository, String branchName, Boolean LFS,
                     String logFile = "C:\\BitBucket.checkout.log") {
-    ctx.dir(repoName) {
+    ctx.dir(repository.toLowerCase().endsWith(".git") ? repoName(repository) : repository) {
         // i) abort possible previous MERGING state
         ctx.bat(
             returnStatus: true,
@@ -216,13 +212,13 @@ static int checkout(ctx, String repoName, String branchName, Boolean LFS,
  *  Merge a Git branch into the current one
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
- *  @param repoName the name of the directory in workspace
+ *  @param repository the name of the directory in workspace
  *  @param branchName the branch to merge into the current one
  *  @param logFile the log file to use
  *  @return exit code
  */
-static int merge(ctx, String repoName, String branchName, String logFile = "C:\\BitBucket.merge.log") {
-    ctx.dir(repoName) {
+static int merge(ctx, String repository, String branchName, String logFile = "C:\\BitBucket.merge.log") {
+    ctx.dir(repository.toLowerCase().endsWith(".git") ? repoName(repository) : repository) {
         return ctx.bat(
             returnStatus: true,
             script: """
@@ -239,7 +235,7 @@ static int merge(ctx, String repoName, String branchName, String logFile = "C:\\
  *  Initialize a repository based on information provided by multibranch pipeline: branch or pull request build
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
- *  @param repoName the name of the directory in workspace
+ *  @param repository the name of the directory in workspace
  *  @param source the base source branch
  *  @param target the base target branch (can be null on branch build)
  *  @param fallback branch name on which to fallback (e.g. "develop")
@@ -248,13 +244,15 @@ static int merge(ctx, String repoName, String branchName, String logFile = "C:\\
  *  @return tuple containing source / target branch, source branch might differ from multibranch pipeline branch and
  *          target can be null on branch build
  */
-static String[] init(ctx, String repoName, String source, String target, String fallback, Boolean LFS,
+static String[] init(ctx, String repository, String source, String target, String fallback, Boolean LFS,
                      String logFile = "C:\\BitBucket.init.log") {
+    String actualRepository = repository.toLowerCase().endsWith(".git") ? repoName(repository) : repository
+
     // checkout if source / target branch exist (assuming fallback exists all the time, e.g. the main branch)
     // 1) TARGET: target is null -> null / target found -> target / target missing -> fallback
     // 2) SOURCE: source found -> source / target found -> target / target missing -> fallback
     List<String> branches = null
-    ctx.dir(repoName) {
+    ctx.dir(actualRepository) {
         branches = (ctx.bat(returnStdout: true, script: "git ls-remote --heads") as String)
                     .split()
                     .findAll { line -> line.contains("refs/heads/") }
@@ -265,7 +263,7 @@ static String[] init(ctx, String repoName, String source, String target, String 
     String usedSource = branches.contains(source) ? source : (target != null ? target : fallback)
 
     // checkout source branch
-    int exit = checkout(ctx, repoName, usedSource, LFS, logFile)
+    int exit = checkout(ctx, actualRepository, usedSource, LFS, logFile)
     if (exit > 0) {
         ctx.error(
             message: """[BitBucket.init] Checking out source branch (${usedSource}) failed with exit code: ${exit}!"""
@@ -274,27 +272,27 @@ static String[] init(ctx, String repoName, String source, String target, String 
 
     // checkout target branch (if PR / merge build and source branch does not equal target branch)
     if (usedTarget != null && usedSource != usedTarget) {
-        exit = checkout(ctx, repoName, usedTarget, LFS, logFile)
+        exit = checkout(ctx, actualRepository, usedTarget, LFS, logFile)
         if (exit > 0) {
             ctx.error(
                 message: "[BitBucket.init] Checking out target branch (${usedTarget}) failed with exit code: ${exit}!"
             )
         }
 
-        exit = merge(ctx, repoName, usedSource, logFile)
+        exit = merge(ctx, actualRepository, usedSource, logFile)
         if (exit > 0) {
             ctx.error(message: """
                 [BitBucket.init] Merging '${usedSource}' into '${usedTarget}' failed with exit code: ${exit}!
             """.stripIndent())
         }
 
-        ctx.echo("!!! [BitBucket.init] Merge build: ${repoName} -> ${usedSource} merged into ${usedTarget} !!!")
+        ctx.echo("!!! [BitBucket.init] Merge build ${actualRepository}: ${usedSource} merged into ${usedTarget} !!!")
     } else if (usedTarget != null) {
         ctx.echo(
-            "!!! [BitBucket.init] Merge build: ${repoName} -> source (${usedSource}) == target (${usedTarget}) !!!"
+            "!!! [BitBucket.init] Merge build ${actualRepository}: source (${usedSource}) == target (${usedTarget}) !!!"
         )
     } else {
-        ctx.echo("!!! [BitBucket.init] Branch build: ${repoName} -> ${usedSource} !!!")
+        ctx.echo("!!! [BitBucket.init] Branch build ${actualRepository}: ${usedSource} !!!")
     }
 
     return (String[])[usedSource, usedTarget]
@@ -305,11 +303,11 @@ static String[] init(ctx, String repoName, String source, String target, String 
  *  Get the last Git commit hash of a specific repository in workspace
  *
  *  @param ctx Jenkinsfile context to invoke DSL commands
- *  @param repoName the repository to check last commit hash
+ *  @param repository the repository to check last commit hash
  *  @return commit hash
  */
-static String lastCommitHash(ctx, String repoName) {
-    ctx.dir(repoName) {
+static String lastCommitHash(ctx, String repository) {
+    ctx.dir(repository.toLowerCase().endsWith(".git") ? repoName(repository) : repository) {
         String hash = ctx.bat(
             returnStdout: true,
             script: """git log -n 1 --pretty=format:'%%H'"""
