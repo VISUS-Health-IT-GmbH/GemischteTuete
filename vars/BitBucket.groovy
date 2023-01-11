@@ -107,6 +107,7 @@ static int checkout(ctx, String repository, String branchName, Boolean LFS,
         )
 
         // ii) initial clean of the repository
+        //     INFO: "git reset --hard" will reset to local copy, maybe branch does not exist anymore on remote!
         def exitCode = ctx.bat(
             returnStatus: true,
             script: """
@@ -118,6 +119,9 @@ static int checkout(ctx, String repository, String branchName, Boolean LFS,
                 if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                 echo "git gc --auto --quiet" >> ${logFile} 2>&1
                 git gc --auto --quiet >> ${logFile} 2>&1
+                if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                echo "git reset --hard" >> ${logFile} 2>&1
+                git reset --hard
                 if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
             """
         )
@@ -141,14 +145,20 @@ static int checkout(ctx, String repository, String branchName, Boolean LFS,
                         echo "git stash --include-untracked" >> ${logFile} 2>&1
                         git stash --include-untracked >> ${logFile} 2>&1
                         if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git fetch --all --prune" >> ${logFile} 2>&1
+                        git fetch --all --prune >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                         echo "git clean -dfx" >> ${logFile} 2>&1
                         git clean -dfx >> ${logFile} 2>&1
                         if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
-                        echo "git reset --hard" >> ${logFile} 2>&1
-                        git reset --hard >> ${logFile} 2>&1
+                        echo "git gc --auto --quiet" >> ${logFile} 2>&1
+                        git gc --auto --quiet >> ${logFile} 2>&1
                         if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                         echo "git stash clear" >> ${logFile} 2>&1
                         git stash clear >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git reset --hard" >> ${logFile} 2>&1
+                        git reset --hard >> ${logFile} 2>&1
                         if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                         echo "git checkout ${branchName}" >> ${logFile} 2>&1
                         git checkout ${branchName} >> ${logFile} 2>&1
@@ -160,45 +170,50 @@ static int checkout(ctx, String repository, String branchName, Boolean LFS,
             exitCode = ctx.bat(
                 returnStatus: true,
                 script: """
-                    echo "git pull" >> ${logFile} 2>&1
-                    git pull >> ${logFile} 2>&1
+                    echo "git fetch --all --prune" >> ${logFile} 2>&1
+                    git fetch --all --prune >> ${logFile} 2>&1
+                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                    echo "git reset --hard origin/${branchName}" >> ${logFile} 2>&1
+                    git reset --hard origin/${branchName} >> ${logFile} 2>&1
                     if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                     echo "git submodule update --init --recursive" >> ${logFile} 2>&1
                     git submodule update --init --recursive >> ${logFile} 2>&1
                     if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                 """
             )
-            if (exitCode > 0) {
-                // INFO: An issue with Git where the same branch differs on remote and locally even though no commits
-                //       where done locally -> reset hard to the remote version of the branch requested!
+
+            // iv) Git LFS if required
+            if (LFS && exitCode == 0) {
                 exitCode = ctx.bat(
                     returnStatus: true,
                     script: """
-                    echo "git reset --hard origin/${branchName}" >> ${logFile} 2>&1
-                    git reset --hard origin/${branchName} >> ${logFile} 2>&1
-                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
-                    echo "git pull" >> ${logFile} 2>&1
-                    git pull >> ${logFile} 2>&1
-                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
-                    echo "git submodule update --init --recursive" >> ${logFile} 2>&1
-                    git submodule update --init --recursive >> ${logFile} 2>&1
-                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git lfs fetch --all --prune" >> ${logFile} 2>&1
+                        git lfs fetch --all --prune >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                        echo "git lfs pull" >> ${logFile} 2>&1
+                        git lfs pull >> ${logFile} 2>&1
+                        if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                     """
                 )
             }
-        }
 
-        // iv) Git LFS if required
-        if (LFS && exitCode == 0) {
-            exitCode = ctx.bat(
+            // v) Show Git information (success)
+            ctx.bat(
                 returnStatus: true,
                 script: """
-                    echo "git lfs fetch --all --prune" >> ${logFile} 2>&1
-                    git lfs fetch --all --prune >> ${logFile} 2>&1
-                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
-                    echo "git lfs pull" >> ${logFile} 2>&1
-                    git lfs pull >> ${logFile} 2>&1
-                    if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
+                    echo "SUCCESS: Branch ${branchName} checked out!" >> ${logFile} 2>&1
+                    echo "git show --oneline -s" >> ${logFile} 2>&1
+                    git show --oneline -s >> ${logFile} 2>&1
+                """
+            )
+        } else {
+            // v) Show Git information (failure)
+            ctx.bat(
+                returnStatus: true,
+                script: """
+                    echo "FAILURE: Branch ${branchName} not checked out!" >> ${logFile} 2>&1
+                    echo "git show --oneline -s" >> ${logFile} 2>&1
+                    git show --oneline -s >> ${logFile} 2>&1
                 """
             )
         }
