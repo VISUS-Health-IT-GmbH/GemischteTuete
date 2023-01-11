@@ -121,7 +121,7 @@ static int checkout(ctx, String repository, String branchName, Boolean LFS,
                 git gc --auto --quiet >> ${logFile} 2>&1
                 if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
                 echo "git reset --hard" >> ${logFile} 2>&1
-                git reset --hard
+                git reset --hard >> ${logFile} 2>&1
                 if %ERRORLEVEL% neq 0 exit /B %ERRORLEVEL%
             """
         )
